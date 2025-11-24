@@ -46,3 +46,20 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
+.topbar nav { display: flex; gap: 10px; }
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.nav-btn:hover, .nav-btn.active {
+    color: var(--text-main);
+    border-bottom: 2px solid var(--accent);
+}
+

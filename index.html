@@ -22,7 +22,145 @@
 
     <main id="app">
         
-       
+        <section id="view-movies" class="view-section">
+            <div class="panel-header">
+                <h2>Gerenciar Filmes</h2>
+                <div class="filters">
+                    <input id="searchMovieInput" placeholder="Buscar filme...">
+                    <select id="filterCategory">
+                        <option value="">Todas as categorias</option>
+                        <option value="Ação">Ação</option>
+                        <option value="Comédia">Comédia</option>
+                        <option value="Drama">Drama</option>
+                    </select>
+                    <select id="filterRating">
+                        <option value="">Classificação</option>
+                        <option value="Livre">Livre</option>
+                        <option value="12">12+</option>
+                        <option value="16">16+</option>
+                        <option value="18">18+</option>
+                    </select>
+                    <button id="btnOpenMovieForm" class="primary-btn">+ Novo Filme</button>
+                </div>
+            </div>
+
+            <div id="moviesList" class="grid-list">
+            </div>
+
+            <div id="movieModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Dados do Filme</h3>
+                    <form id="movieForm">
+                        <input type="hidden" id="movieId">
+                        <label>Título <input id="movieTitle" required></label>
+                        <div class="row">
+                            <label>Duração (min) <input type="number" id="movieDuration" required></label>
+                            <label>Classificação <input id="movieRating" required></label>
+                        </div>
+                        <label>Gênero <input id="movieGenre" required></label>
+                        <label>Sinopse <textarea id="movieSynopsis" rows="3"></textarea></label>
+                        <div class="form-actions">
+                            <button type="button" id="btnCancelMovie">Cancelar</button>
+                            <button type="submit" class="primary-btn">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-rooms" class="view-section hidden">
+            <div class="panel-header">
+                <h2>Mapa das Salas</h2>
+            </div>
+            <div id="roomsContainer" class="rooms-grid">
+            </div>
+        </section>
+
+        <section id="view-sessions" class="view-section hidden">
+            <div id="sessionsListContainer">
+                <div class="panel-header">
+                    <h2>Sessões</h2>
+                    <div class="filters">
+                        <select id="sessionFilterMovie"><option value="">Filtrar Filme</option></select>
+                        <select id="sessionFilterRoom"><option value="">Filtrar Sala</option></select>
+                        <input type="date" id="sessionFilterDate">
+                        <button id="btnShowSessionForm" class="primary-btn">Criar Sessão</button>
+                    </div>
+                </div>
+                <div id="sessionsList" class="table-list">
+                </div>
+            </div>
+
+            <div id="sessionFormContainer" class="form-panel hidden">
+                <h3>Gerenciar Sessão</h3>
+                <form id="sessionForm">
+                    <input type="hidden" id="sessionId">
+                    <label>Filme 
+                        <select id="sessionMovieSelect" required></select>
+                    </label>
+                    <label>Sala 
+                        <select id="sessionRoomSelect" required></select>
+                    </label>
+                    <div class="row">
+                        <label>Data <input type="date" id="sessionDate" required></label>
+                        <label>Horário <input type="time" id="sessionTime" required></label>
+                    </div>
+                    <label>Preço do Ingresso <input type="number" step="0.01" id="sessionPrice" required></label>
+                    
+                    <div class="form-actions">
+                        <button type="button" id="btnCancelSession">Voltar para Lista</button>
+                        <button type="submit" class="primary-btn">Salvar Sessão</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="view-sales" class="view-section hidden">
+            
+            <div id="salesListContainer">
+                <div class="panel-header">
+                    <h2>Vendas Realizadas</h2>
+                    <div class="filters">
+                         <input id="searchSaleInput" placeholder="ID da venda ou Nome...">
+                         <button id="btnShowSaleForm" class="primary-btn">Nova Venda</button>
+                    </div>
+                </div>
+                <div id="salesList" class="cards-list">
+                </div>
+            </div>
+
+            <div id="saleFormContainer" class="form-panel hidden">
+                <h3>Nova Venda</h3>
+                <form id="saleForm">
+                    <div class="form-group">
+                        <label>Escolha a Sessão:</label>
+                        <select id="saleSessionSelect" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="seatsSelectionArea">
+                        <p>Assentos Disponíveis: <span id="availableSeatsDisplay">-</span></p>
+                        <label>Digite os números dos assentos (separados por vírgula):</label>
+                        <input type="text" id="saleSeatsInput" placeholder="Ex: A1, A2" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nome do Cliente:</label>
+                        <input type="text" id="saleCustomerName" required>
+                    </div>
+
+                    <div class="total-display">
+                        Total: R$ <span id="saleTotalValue">0,00</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="btnCancelSale">Cancelar Venda</button>
+                        <button type="submit" class="confirm-btn">Finalizar Compra</button>
+                    </div>
+                </form>
+            </div>
+        </section>
 
     </main>
 

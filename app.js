@@ -111,3 +111,68 @@ function toggleRoomStatus(id, newStatus) {
     fetchRooms();
 }
 
+const sessionListContainer = getElement('#sessionsListContainer');
+const sessionFormContainer = getElement('#sessionFormContainer');
+
+getElement('#btnShowSessionForm').onclick = () => {
+    sessionListContainer.classList.add('hidden');
+    sessionFormContainer.classList.remove('hidden');
+    //carregar os selects de filmes e salas via fetch
+};
+
+getElement('#btnCancelSession').onclick = () => {
+    sessionFormContainer.classList.add('hidden');
+    sessionListContainer.classList.remove('hidden');
+};
+
+async function fetchSessions() {
+    // Buscar sessões do backend e preencher #sessionsList
+    const list = getElement('#sessionsList');
+    
+    // MOCK
+    const sessions = [
+        { _id: 's1', movie: 'Barbie', room: 'Sala 1', time: '14:00', date: '2023-10-25' },
+        { _id: 's2', movie: 'O Poderoso Chefão', room: 'Sala 2 VIP', time: '20:00', date: '2023-10-25' }
+    ];
+
+    list.innerHTML = sessions.map(s => `
+        <div class="session-item">
+            <div>
+                <strong>${s.movie}</strong>
+                <div>${s.room} - ${s.date} às ${s.time}</div>
+            </div>
+            <div>
+                <button onclick="alert('Editar sessão ${s._id}')">Editar</button>
+                <button onclick="alert('Excluir sessão ${s._id}')">Excluir</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+const salesListContainer = getElement('#salesListContainer');
+const saleFormContainer = getElement('#saleFormContainer');
+
+getElement('#btnShowSaleForm').onclick = () => {
+    salesListContainer.classList.add('hidden');
+    saleFormContainer.classList.remove('hidden');
+};
+
+getElement('#btnCancelSale').onclick = () => {
+    saleFormContainer.classList.add('hidden');
+    salesListContainer.classList.remove('hidden');
+};
+
+async function fetchSales() {
+    const list = getElement('#salesList');
+    list.innerHTML = '<p>Nenhuma venda encontrada.</p>';
+}
+
+getElement('#saleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alert('Implementar POST /sales com fetch');
+    saleFormContainer.classList.add('hidden');
+    salesListContainer.classList.remove('hidden');
+    fetchSales();
+});
+
+loadViewData('movies');

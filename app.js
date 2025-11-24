@@ -69,3 +69,45 @@ getElement('#btnCancelMovie').onclick = () => {
     getElement('#movieModal').classList.add('hidden');
 };
 
+async function fetchRooms() {
+    const container = getElement('#roomsContainer');
+    container.innerHTML = '<p>Carregando salas...</p>';
+
+    // MOCK
+    const rooms = [
+        { _id: '101', name: 'Sala 1', capacity: 50, active: true },
+        { _id: '102', name: 'Sala 2 VIP', capacity: 30, active: false }
+    ];
+
+    container.innerHTML = rooms.map(room => {
+        let seatsHtml = '';
+        for(let i=0; i<room.capacity; i++) {
+            seatsHtml += `<div class="seat free"></div>`;
+        }
+
+        return `
+            <div class="room-card">
+                <div class="room-header">
+                    <h3>${room.name} <small>(${room.capacity} lugares)</small></h3>
+                    <span class="status-badge ${room.active ? 'status-active' : 'status-inactive'}">
+                        ${room.active ? 'Ativa' : 'Inativa'}
+                    </span>
+                </div>
+                <div class="seat-map">
+                    ${seatsHtml}
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="toggleRoomStatus('${room._id}', ${!room.active})">
+                        ${room.active ? 'Desativar Sala' : 'Ativar Sala'}
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleRoomStatus(id, newStatus) {
+    console.log(`Enviar PUT para /rooms/${id} com active: ${newStatus}`);
+    fetchRooms();
+}
+

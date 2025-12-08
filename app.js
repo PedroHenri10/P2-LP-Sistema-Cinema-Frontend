@@ -68,6 +68,11 @@ getElement('#btnCancelMovie').onclick = () => {
 };
 
 
+async function deleteMovie(id) {
+    if(!confirm('Tem certeza?')) return;
+    await fetch(`${API_URL}/filmes/${id}`, { method: 'DELETE' });
+    fetchMovies();
+}
 
 async function fetchRooms() {
     const container = getElement('#roomsContainer');
@@ -144,6 +149,27 @@ getElement('#btnCancelSession').onclick = () => {
     sessionListContainer.classList.remove('hidden');
 };
 
+getElement('#sessionForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const novaSessao = {
+        filme: getElement('#sessionMovieSelect').value,
+        sala: getElement('#sessionRoomSelect').value,
+        data: getElement('#sessionDate').value,
+        horario: getElement('#sessionTime').value,
+        preco: getElement('#sessionPrice').value
+    };
+
+    await fetch(`${API_URL}/sessoes`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(novaSessao)
+    });
+    
+    alert('Sessão criada!');
+    sessionFormContainer.classList.add('hidden');
+    sessionListContainer.classList.remove('hidden');
+    fetchSessions();
+});
 
 async function fetchSessions() {
     const list = getElement('#sessionsList');

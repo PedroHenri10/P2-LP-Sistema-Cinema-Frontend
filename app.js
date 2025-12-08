@@ -67,6 +67,35 @@ getElement('#btnCancelMovie').onclick = () => {
     getElement('#movieModal').classList.add('hidden');
 };
 
+getElement('#movieForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const novoFilme = {
+        titulo: getElement('#movieTitle').value,
+        duracao: getElement('#movieDuration').value,
+        classificacao: getElement('#movieRating').value,
+        genero: getElement('#movieGenre').value,
+        sinopse: getElement('#movieSynopsis').value
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/filmes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(novoFilme)
+        });
+
+        if(res.ok) {
+            alert('Filme salvo!');
+            getElement('#movieModal').classList.add('hidden');
+            fetchMovies();
+        } else {
+            alert('Erro ao salvar filme');
+        }
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 async function deleteMovie(id) {
     if(!confirm('Tem certeza?')) return;

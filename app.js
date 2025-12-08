@@ -182,7 +182,16 @@ getElement('#btnShowSaleForm').onclick = async () => {
     salesListContainer.classList.add('hidden');
     saleFormContainer.classList.remove('hidden');
 
+    const res = await fetch(`${API_URL}/sessoes`);
+    const sessions = await res.json();
+    const select = getElement('#saleSessionSelect');
     
+    select.innerHTML = '<option value="">Selecione a Sessão</option>';
+    select.innerHTML += sessions.map(s => `
+        <option value="${s._id}">
+            ${s.filme?.titulo} (${s.horario}) - ${s.sala?.nome}
+        </option>
+    `).join('');
 };
 
 getElement('#btnCancelSale').onclick = () => {

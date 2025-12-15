@@ -42,16 +42,17 @@ async function fetchMovies() {
         list.innerHTML = data.map(m => `
             <div class="card">
                 <div>
-                    <h3>${m.titulo}</h3>
-                    <p>${m.genero} • ${m.duracao} min</p>
-                    <p>Classificação: ${m.classificacao}</p>
+                <h3>${m.titulo}</h3>
+                <p>${m.genero} • ${m.duracao} min</p>
+                <p>Classificação: ${m.classificacao}</p>
                 </div>
                 <div class="card-actions">
-                    <button onclick="alert('Sinopse: ${m.sinopse || 'Sem sinopse'}')">Detalhes</button>
-                    <button onclick="deleteMovie('${m._id}')" style="color: #ff6b6b">Excluir</button>
+                <button onclick="openMovieDetails('${m._id}')">Detalhes</button>
+                <button onclick="openEditMovie('${m._id}')">Editar</button>
+                <button onclick="deleteMovie('${m._id}')" style="color:#ff6b6b">Excluir</button>
                 </div>
             </div>
-        `).join('');
+            `).join('');
     } catch (error) {
         list.innerHTML = '<p>Erro ao conectar com o servidor.</p>';
         console.error(error);

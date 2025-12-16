@@ -98,6 +98,23 @@ getElement('#movieForm').addEventListener('submit', async (e) => {
     }
 });
 
+async function openMovieDetails(id) {
+  const res = await fetch(`${API_URL}/filmes/${id}`);
+  const m = await res.json();
+
+  getElement('#detailsTitle').innerText = m.titulo;
+  getElement('#detailsInfo').innerText =
+    `${m.genero} • ${m.duracao} min • Classificação ${m.classificacao}`;
+  getElement('#detailsSynopsis').innerText = m.sinopse || 'Sem sinopse';
+
+  getElement('#movieDetailsModal').classList.remove('hidden');
+}
+
+function closeMovieDetails() {
+  getElement('#movieDetailsModal').classList.add('hidden');
+}
+
+
 async function deleteMovie(id) {
     if(!confirm('Tem certeza?')) return;
     await fetch(`${API_URL}/filmes/${id}`, { method: 'DELETE' });

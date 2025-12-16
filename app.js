@@ -26,6 +26,36 @@ function loadViewData(view) {
     if (view === 'sales') fetchSales();
 }
 
+async function openMovieDetails(id) {
+  const res = await fetch(`${API_URL}/filmes/${id}`);
+  const m = await res.json();
+
+  getElement('#detailsTitle').innerText = m.titulo;
+  getElement('#detailsInfo').innerText =
+    `${m.genero} • ${m.duracao} min • Classificação ${m.classificacao}`;
+  getElement('#detailsSynopsis').innerText = m.sinopse || 'Sem sinopse';
+
+  getElement('#movieDetailsModal').classList.remove('hidden');
+}
+
+function closeMovieDetails() {
+  getElement('#movieDetailsModal').classList.add('hidden');
+}
+
+async function openEditMovie(id) {
+  const res = await fetch(`${API_URL}/filmes/${id}`);
+  const m = await res.json();
+
+  getElement('#movieId').value = m._id;
+  getElement('#movieTitle').value = m.titulo;
+  getElement('#movieDuration').value = m.duracao;
+  getElement('#movieRating').value = m.classificacao;
+  getElement('#movieGenre').value = m.genero;
+  getElement('#movieSynopsis').value = m.sinopse || '';
+
+  getElement('#movieModal').classList.remove('hidden');
+}
+
 async function fetchMovies() {
     const list = getElement('#moviesList');
     list.innerHTML = '<p>Carregando filmes...</p>';
@@ -70,50 +100,45 @@ getElement('#btnCancelMovie').onclick = () => {
 
 getElement('#movieForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const novoFilme = {
+
+    const id = getElement('#movieId').value;
+
+    const filme = {
         titulo: getElement('#movieTitle').value,
-        duracao: getElement('#movieDuration').value,
+        duracao: Number(getElement('#movieDuration').value),
         classificacao: getElement('#movieRating').value,
         genero: getElement('#movieGenre').value,
         sinopse: getElement('#movieSynopsis').value
     };
 
+    const method = id ? 'PUT' : 'POST';
+    const url = id 
+        ? `${API_URL}/filmes/${id}` 
+        : `${API_URL}/filmes`;
+
     try {
-        const res = await fetch(`${API_URL}/filmes`, {
-            method: 'POST',
+        const res = await fetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(novoFilme)
+            body: JSON.stringify(filme)
         });
 
-        if(res.ok) {
-            alert('Filme salvo!');
-            getElement('#movieModal').classList.add('hidden');
-            fetchMovies();
-        } else {
-            alert('Erro ao salvar filme');
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || 'Erro ao salvar filme');
         }
-    } catch (error) {
-        console.error(error);
+
+        alert(id ? 'Filme atualizado com sucesso!' : 'Filme criado com sucesso!');
+        getElement('#movieModal').classList.add('hidden');
+        getElement('#movieForm').reset();
+        getElement('#movieId').value = '';
+        fetchMovies();
+
+    } catch (err) {
+        console.error(err);
+        alert('Erro: ' + err.message);
     }
 });
-
-async function openMovieDetails(id) {
-  const res = await fetch(`${API_URL}/filmes/${id}`);
-  const m = await res.json();
-
-  getElement('#detailsTitle').innerText = m.titulo;
-  getElement('#detailsInfo').innerText =
-    `${m.genero} • ${m.duracao} min • Classificação ${m.classificacao}`;
-  getElement('#detailsSynopsis').innerText = m.sinopse || 'Sem sinopse';
-
-  getElement('#movieDetailsModal').classList.remove('hidden');
-}
-
-function closeMovieDetails() {
-  getElement('#movieDetailsModal').classList.add('hidden');
-}
-
 
 async function deleteMovie(id) {
     if(!confirm('Tem certeza?')) return;

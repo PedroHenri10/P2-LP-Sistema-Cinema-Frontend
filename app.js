@@ -59,30 +59,40 @@ async function openEditMovie(id) {
 async function fetchMovies() {
     const list = getElement('#moviesList');
     list.innerHTML = '<p>Carregando filmes...</p>';
-    
+
+    const busca = getElement('#searchMovieInput').value;
+    const categoria = getElement('#filterCategory').value;
+    const classificacao = getElement('#filterRating').value;
+
+    const query = new URLSearchParams();
+
+    if (busca) query.append('busca', busca);
+    if (categoria) query.append('categoria', categoria);
+    if (classificacao) query.append('classificacao', classificacao);
+
     try {
-        const res = await fetch(`${API_URL}/filmes`);
+        const res = await fetch(`${API_URL}/filmes?${query.toString()}`);
         const data = await res.json();
-        
-        if(data.length === 0) {
-            list.innerHTML = '<p>Nenhum filme cadastrado.</p>';
+
+        if (data.length === 0) {
+            list.innerHTML = '<p>Nenhum filme encontrado.</p>';
             return;
         }
 
         list.innerHTML = data.map(m => `
             <div class="card">
                 <div>
-                <h3>${m.titulo}</h3>
-                <p>${m.genero} • ${m.duracao} min</p>
-                <p>Classificação: ${m.classificacao}</p>
+                    <h3>${m.titulo}</h3>
+                    <p>${m.genero} • ${m.duracao} min</p>
+                    <p>Classificação: ${m.classificacao}</p>
                 </div>
                 <div class="card-actions">
-                <button onclick="openMovieDetails('${m._id}')">Detalhes</button>
-                <button onclick="openEditMovie('${m._id}')">Editar</button>
-                <button onclick="deleteMovie('${m._id}')" style="color:#ff6b6b">Excluir</button>
+                    <button onclick="openMovieDetails('${m._id}')">Detalhes</button>
+                    <button onclick="editMovie('${m._id}')">Editar</button>
+                    <button onclick="deleteMovie('${m._id}')" style="color:#ff6b6b">Excluir</button>
                 </div>
             </div>
-            `).join('');
+        `).join('');
     } catch (error) {
         list.innerHTML = '<p>Erro ao conectar com o servidor.</p>';
         console.error(error);
@@ -356,3 +366,6 @@ async function fetchSales() {
 }
 
 loadViewData('movies');
+getElement('#searchMovieInput').addEventListener('input', fetchMovies);
+getElement('#filterCategory').addEventListener('change', fetchMovies);
+getElement('#filterRating').addEventListener('change', fetchMovies);

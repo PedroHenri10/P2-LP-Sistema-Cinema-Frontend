@@ -275,25 +275,49 @@ getElement('#sessionForm').addEventListener('submit', async (e) => {
 async function fetchSessions() {
     const list = getElement('#sessionsList');
     list.innerHTML = '<p>Carregando...</p>';
-    
+
+    const filmeId = getElement('#sessionFilterMovie')?.value || '';
+    const salaId  = getElement('#sessionFilterRoom')?.value || '';
+    const data    = getElement('#sessionFilterDate')?.value || '';
+
+    const query = new URLSearchParams();
+
+    if (filmeId) query.append('filmeId', filmeId);
+    if (salaId)  query.append('salaId', salaId);
+    if (data)    query.append('data', data);
+
     try {
-        const res = await fetch(`${API_URL}/sessoes`);
+        const res = await fetch(
+            `${API_URL}/sessoes/search?${query.toString()}`
+        );
         const sessions = await res.json();
+
+        if (!sessions.length) {
+            list.innerHTML = '<p>Nenhuma sessão encontrada</p>';
+            return;
+        }
 
         list.innerHTML = sessions.map(s => `
             <div class="session-item">
                 <div>
                     <strong>${s.filme ? s.filme.titulo : 'Filme Removido'}</strong>
-                    <div>${s.sala ? s.sala.nome : 'Sala Removida'} - ${s.data} às ${s.horario}</div>
+                    <div>
+                        ${s.sala ? s.sala.nome : 'Sala Removida'}
+                        - ${s.data} às ${s.horario}
+                    </div>
                 </div>
                 <div>
                     <button onclick="editSession('${s._id}')">Editar</button>
-                    <button onclick="deleteSession('${s._id}')" style="color: #ff6b6b">Excluir</button>
+                    <button onclick="deleteSession('${s._id}')" style="color:#ff6b6b">
+                        Excluir
+                    </button>
                 </div>
             </div>
         `).join('');
-    } catch(e) {
+
+    } catch (e) {
         console.error(e);
+        list.innerHTML = '<p>Erro ao carregar sessões</p>';
     }
 }
 

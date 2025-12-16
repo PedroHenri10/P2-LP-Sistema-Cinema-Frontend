@@ -108,41 +108,44 @@ getElement('#btnCancelMovie').onclick = () => {
     getElement('#movieModal').classList.add('hidden');
 };
 
-getElement('#movieForm').addEventListener('submit', async (e) => {
+getElement('#sessionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const id = getElement('#movieId').value;
+    const id = getElement('#sessionId').value;
 
-    const filme = {
-        titulo: getElement('#movieTitle').value,
-        duracao: Number(getElement('#movieDuration').value),
-        classificacao: getElement('#movieRating').value,
-        genero: getElement('#movieGenre').value,
-        sinopse: getElement('#movieSynopsis').value
+    const sessao = {
+        filme: getElement('#sessionMovieSelect').value,
+        sala: getElement('#sessionRoomSelect').value,
+        data: getElement('#sessionDate').value,
+        horario: getElement('#sessionTime').value,
+        preco: Number(getElement('#sessionPrice').value)
     };
 
     const method = id ? 'PUT' : 'POST';
-    const url = id 
-        ? `${API_URL}/filmes/${id}` 
-        : `${API_URL}/filmes`;
+    const url = id
+        ? `${API_URL}/sessoes/${id}`
+        : `${API_URL}/sessoes`;
 
     try {
         const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(filme)
+            body: JSON.stringify(sessao)
         });
 
         if (!res.ok) {
             const error = await res.json();
-            throw new Error(error.error || 'Erro ao salvar filme');
+            throw new Error(error.error || 'Erro ao salvar sessão');
         }
 
-        alert(id ? 'Filme atualizado com sucesso!' : 'Filme criado com sucesso!');
-        getElement('#movieModal').classList.add('hidden');
-        getElement('#movieForm').reset();
-        getElement('#movieId').value = '';
-        fetchMovies();
+        alert(id ? 'Sessão atualizada com sucesso!' : 'Sessão criada com sucesso!');
+
+        getElement('#sessionForm').reset();
+        getElement('#sessionId').value = '';
+        sessionFormContainer.classList.add('hidden');
+        sessionListContainer.classList.remove('hidden');
+
+        fetchSessions();
 
     } catch (err) {
         console.error(err);
@@ -207,6 +210,22 @@ async function toggleRoomStatus(id, newStatus) {
     }
 }
 
+async function editSession(id) {
+  const res = await fetch(`${API_URL}/sessoes`);
+  const sessoes = await res.json();
+  const s = sessoes.find(x => x._id === id);
+
+  getElement('#sessionId').value = s._id;
+  getElement('#sessionMovieSelect').value = s.filme._id;
+  getElement('#sessionRoomSelect').value = s.sala._id;
+  getElement('#sessionDate').value = s.data;
+  getElement('#sessionTime').value = s.horario;
+  getElement('#sessionPrice').value = s.preco;
+
+  sessionListContainer.classList.add('hidden');
+  sessionFormContainer.classList.remove('hidden');
+}
+
 const sessionListContainer = getElement('#sessionsListContainer');
 const sessionFormContainer = getElement('#sessionFormContainer');
 
@@ -268,6 +287,7 @@ async function fetchSessions() {
                     <div>${s.sala ? s.sala.nome : 'Sala Removida'} - ${s.data} às ${s.horario}</div>
                 </div>
                 <div>
+                    <button onclick="editSession('${s._id}')">Editar</button>
                     <button onclick="deleteSession('${s._id}')" style="color: #ff6b6b">Excluir</button>
                 </div>
             </div>

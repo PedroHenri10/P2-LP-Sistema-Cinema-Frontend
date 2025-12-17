@@ -409,6 +409,31 @@ async function fetchSales() {
     } catch(e) { console.error(e); }
 }
 
+getElement('#saleSessionSelect').onchange = async (e) => {
+  const sessaoId = e.target.value;
+  if (!sessaoId) return;
+
+  const resSessao = await fetch(`${API_URL}/sessoes/search`);
+  const sessoes = await resSessao.json();
+  const sessao = sessoes.find(s => s._id === sessaoId);
+
+  const res = await fetch(`${API_URL}/vendas/ocupados/${sessaoId}`);
+  const ocupados = await res.json();
+
+  const seatMap = getElement('#seatMap');
+  seatMap.innerHTML = '';
+
+  for (let i = 1; i <= sessao.sala.capacidade; i++) {
+    const seat = document.createElement('div');
+    seat.className = 'seat ' + (ocupados.includes(i) ? 'occupied' : 'free');
+    seat.innerText = i;
+    seatMap.appendChild(seat);
+  }
+
+  getElement('#seatModal').classList.remove('hidden');
+};
+
+
 loadViewData('movies');
 getElement('#searchMovieInput').addEventListener('input', fetchMovies);
 getElement('#filterCategory').addEventListener('change', fetchMovies);

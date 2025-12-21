@@ -84,7 +84,6 @@ async function loadCategories() {
         
         const select = document.getElementById('filterCategory');
         
-        // Mantém a opção "Todas" e adiciona as do banco
         select.innerHTML = '<option value="">Todas as categorias</option>';
         
         generos.forEach(genero => {

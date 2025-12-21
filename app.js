@@ -1,7 +1,9 @@
-const API_URL = 'http://localhost:3000'; 
+const API_URL = 'http://localhost:3000';
 
 const getElement = (selector) => document.querySelector(selector);
 const getElements = (selector) => document.querySelectorAll(selector);
+
+let currentSelectedSeats = [];
 
 getElements('.nav-btn').forEach(button => {
     button.addEventListener('click', (e) => {
@@ -22,38 +24,11 @@ getElements('.nav-btn').forEach(button => {
 function loadViewData(view) {
     if (view === 'movies') fetchMovies();
     if (view === 'rooms') fetchRooms();
-    if (view === 'sessions') fetchSessions();
+    if (view === 'sessions') {
+        fetchSessions();
+        populateSessionFilters(); 
+    }
     if (view === 'sales') fetchSales();
-}
-
-async function openMovieDetails(id) {
-  const res = await fetch(`${API_URL}/filmes/${id}`);
-  const m = await res.json();
-
-  getElement('#detailsTitle').innerText = m.titulo;
-  getElement('#detailsInfo').innerText =
-    `${m.genero} • ${m.duracao} min • Classificação ${m.classificacao}`;
-  getElement('#detailsSynopsis').innerText = m.sinopse || 'Sem sinopse';
-
-  getElement('#movieDetailsModal').classList.remove('hidden');
-}
-
-function closeMovieDetails() {
-  getElement('#movieDetailsModal').classList.add('hidden');
-}
-
-async function openEditMovie(id) {
-  const res = await fetch(`${API_URL}/filmes/${id}`);
-  const m = await res.json();
-
-  getElement('#movieId').value = m._id;
-  getElement('#movieTitle').value = m.titulo;
-  getElement('#movieDuration').value = m.duracao;
-  getElement('#movieRating').value = m.classificacao;
-  getElement('#movieGenre').value = m.genero;
-  getElement('#movieSynopsis').value = m.sinopse || '';
-
-  getElement('#movieModal').classList.remove('hidden');
 }
 
 async function fetchMovies() {
@@ -65,7 +40,6 @@ async function fetchMovies() {
     const classificacao = getElement('#filterRating').value;
 
     const query = new URLSearchParams();
-
     if (busca) query.append('busca', busca);
     if (categoria) query.append('categoria', categoria);
     if (classificacao) query.append('classificacao', classificacao);
@@ -73,6 +47,10 @@ async function fetchMovies() {
     try {
         const res = await fetch(`${API_URL}/filmes?${query.toString()}`);
         const data = await res.json();
+
+        if (!categoria) {
+            updateCategoryFilter(data);
+        }
 
         if (data.length === 0) {
             list.innerHTML = '<p>Nenhum filme encontrado.</p>';
@@ -99,65 +77,123 @@ async function fetchMovies() {
     }
 }
 
-getElement('#btnOpenMovieForm').onclick = () => {
-    getElement('#movieForm').reset();
-    getElement('#movieModal').classList.remove('hidden');
-};
+async function loadCategories() {
+    try {
+        const res = await fetch(`${API_URL}/filmes/generos`);
+        const generos = await res.json();
+        
+        const select = document.getElementById('filterCategory');
+        
+        // Mantém a opção "Todas" e adiciona as do banco
+        select.innerHTML = '<option value="">Todas as categorias</option>';
+        
+        generos.forEach(genero => {
+            select.innerHTML += `<option value="${genero}">${genero}</option>`;
+        });
+    } catch (error) {
+        console.error('Erro ao carregar categorias:', error);
+    }
+}
 
-getElement('#btnCancelMovie').onclick = () => {
-    getElement('#movieModal').classList.add('hidden');
-};
+function updateCategoryFilter(movies) {
+    const select = getElement('#filterCategory');
+    const currentVal = select.value;
+    
+    const categorias = [...new Set(movies.map(m => m.genero))];
+    
+    let html = '<option value="">Todas as categorias</option>';
+    categorias.forEach(cat => {
+        html += `<option value="${cat}">${cat}</option>`;
+    });
+    
+    select.innerHTML = html;
+    select.value = currentVal;
+}
 
-getElement('#sessionForm').addEventListener('submit', async (e) => {
+getElement('#movieForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    const id = getElement('#sessionId').value;
-
-    const sessao = {
-        filme: getElement('#sessionMovieSelect').value,
-        sala: getElement('#sessionRoomSelect').value,
-        data: getElement('#sessionDate').value,
-        horario: getElement('#sessionTime').value,
-        preco: Number(getElement('#sessionPrice').value)
+    
+    const id = getElement('#movieId').value;
+    const movieData = {
+        titulo: getElement('#movieTitle').value,
+        duracao: getElement('#movieDuration').value,
+        classificacao: getElement('#movieRating').value,
+        genero: getElement('#movieGenre').value,
+        sinopse: getElement('#movieSynopsis').value
     };
 
     const method = id ? 'PUT' : 'POST';
-    const url = id
-        ? `${API_URL}/sessoes/${id}`
-        : `${API_URL}/sessoes`;
+    const url = id ? `${API_URL}/filmes/${id}` : `${API_URL}/filmes`;
 
     try {
         const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(sessao)
+            body: JSON.stringify(movieData)
         });
 
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.error || 'Erro ao salvar sessão');
+        if (res.ok) {
+            alert('Filme salvo com sucesso!');
+            getElement('#movieModal').classList.add('hidden');
+            fetchMovies();
+        } else {
+            alert('Erro ao salvar filme');
         }
-
-        alert(id ? 'Sessão atualizada com sucesso!' : 'Sessão criada com sucesso!');
-
-        getElement('#sessionForm').reset();
-        getElement('#sessionId').value = '';
-        sessionFormContainer.classList.add('hidden');
-        sessionListContainer.classList.remove('hidden');
-
-        fetchSessions();
-
     } catch (err) {
         console.error(err);
-        alert('Erro: ' + err.message);
+        alert('Erro de conexão');
     }
 });
 
-async function deleteMovie(id) {
+window.editMovie = async function(id) {
+    try {
+        const res = await fetch(`${API_URL}/filmes/${id}`);
+        const m = await res.json();
+
+        getElement('#movieId').value = m._id;
+        getElement('#movieTitle').value = m.titulo;
+        getElement('#movieDuration').value = m.duracao;
+        getElement('#movieRating').value = m.classificacao;
+        getElement('#movieGenre').value = m.genero;
+        getElement('#movieSynopsis').value = m.sinopse || '';
+
+        getElement('#movieModal').classList.remove('hidden');
+    } catch (err) {
+        alert('Erro ao carregar dados do filme');
+    }
+};
+
+window.openMovieDetails = async function(id) {
+    const res = await fetch(`${API_URL}/filmes/${id}`);
+    const m = await res.json();
+    
+    getElement('#detailsTitle').innerText = m.titulo;
+    getElement('#detailsInfo').innerText = 
+        `${m.genero} • ${m.duracao} min • Classificação ${m.classificacao}`;
+    getElement('#detailsSynopsis').innerText = m.sinopse || 'Sem sinopse';
+    
+    getElement('#movieDetailsModal').classList.remove('hidden');
+};
+
+window.closeMovieDetails = () => getElement('#movieDetailsModal').classList.add('hidden');
+
+getElement('#btnOpenMovieForm').onclick = () => {
+    getElement('#movieForm').reset();
+    getElement('#movieId').value = ''; 
+    getElement('#movieModal').classList.remove('hidden');
+};
+
+getElement('#btnCancelMovie').onclick = () => getElement('#movieModal').classList.add('hidden');
+
+window.deleteMovie = async function(id) {
     if(!confirm('Tem certeza?')) return;
     await fetch(`${API_URL}/filmes/${id}`, { method: 'DELETE' });
     fetchMovies();
-}
+};
+
+getElement('#searchMovieInput').addEventListener('input', fetchMovies);
+getElement('#filterCategory').addEventListener('change', fetchMovies);
+getElement('#filterRating').addEventListener('change', fetchMovies);
 
 async function fetchRooms() {
     const container = getElement('#roomsContainer');
@@ -197,99 +233,61 @@ async function fetchRooms() {
     }
 }
 
-async function toggleRoomStatus(id, newStatus) {
+window.toggleRoomStatus = async function(id, newStatus) {
     try {
         await fetch(`${API_URL}/salas/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ativa: newStatus })
         });
-        fetchRooms(); 
+        fetchRooms();
     } catch (error) {
         alert('Erro ao alterar status da sala');
     }
-}
-
-async function editSession(id) {
-  const res = await fetch(`${API_URL}/sessoes`);
-  const sessoes = await res.json();
-  const s = sessoes.find(x => x._id === id);
-
-  getElement('#sessionId').value = s._id;
-  getElement('#sessionMovieSelect').value = s.filme._id;
-  getElement('#sessionRoomSelect').value = s.sala._id;
-  getElement('#sessionDate').value = s.data;
-  getElement('#sessionTime').value = s.horario;
-  getElement('#sessionPrice').value = s.preco;
-
-  sessionListContainer.classList.add('hidden');
-  sessionFormContainer.classList.remove('hidden');
-}
-
-const sessionListContainer = getElement('#sessionsListContainer');
-const sessionFormContainer = getElement('#sessionFormContainer');
-
-getElement('#btnShowSessionForm').onclick = async () => {
-    sessionListContainer.classList.add('hidden');
-    sessionFormContainer.classList.remove('hidden');
-    
-    const filmesRes = await fetch(`${API_URL}/filmes`);
-    const salasRes = await fetch(`${API_URL}/salas`);
-    const filmes = await filmesRes.json();
-    const salas = await salasRes.json();
-
-    const movieSelect = getElement('#sessionMovieSelect');
-    const roomSelect = getElement('#sessionRoomSelect');
-
-    movieSelect.innerHTML = filmes.map(f => `<option value="${f._id}">${f.titulo}</option>`).join('');
-    roomSelect.innerHTML = salas.map(s => `<option value="${s._id}">${s.nome}</option>`).join('');
 };
 
-getElement('#btnCancelSession').onclick = () => {
-    sessionFormContainer.classList.add('hidden');
-    sessionListContainer.classList.remove('hidden');
-};
+async function populateSessionFilters() {
+    try {
+        const [filmes, salas] = await Promise.all([
+            fetch(`${API_URL}/filmes`).then(r => r.json()),
+            fetch(`${API_URL}/salas`).then(r => r.json())
+        ]);
 
-getElement('#sessionForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const novaSessao = {
-        filme: getElement('#sessionMovieSelect').value,
-        sala: getElement('#sessionRoomSelect').value,
-        data: getElement('#sessionDate').value,
-        horario: getElement('#sessionTime').value,
-        preco: getElement('#sessionPrice').value
-    };
+        const filterMovie = getElement('#sessionFilterMovie');
+        const filterRoom = getElement('#sessionFilterRoom');
 
-    await fetch(`${API_URL}/sessoes`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(novaSessao)
-    });
-    
-    alert('Sessão criada!');
-    sessionFormContainer.classList.add('hidden');
-    sessionListContainer.classList.remove('hidden');
-    fetchSessions();
-});
+        const currentMovie = filterMovie.value;
+        const currentRoom = filterRoom.value;
+
+        filterMovie.innerHTML = '<option value="">Filtrar Filme</option>' + 
+            filmes.map(f => `<option value="${f._id}">${f.titulo}</option>`).join('');
+        
+        filterRoom.innerHTML = '<option value="">Filtrar Sala</option>' + 
+            salas.map(s => `<option value="${s._id}">${s.nome}</option>`).join('');
+
+        filterMovie.value = currentMovie;
+        filterRoom.value = currentRoom;
+        
+    } catch (e) {
+        console.error("Erro ao popular filtros de sessão", e);
+    }
+}
 
 async function fetchSessions() {
     const list = getElement('#sessionsList');
     list.innerHTML = '<p>Carregando...</p>';
-
-    const filmeId = getElement('#sessionFilterMovie')?.value || '';
-    const salaId  = getElement('#sessionFilterRoom')?.value || '';
-    const data    = getElement('#sessionFilterDate')?.value || '';
+    
+    const filmeId = getElement('#sessionFilterMovie').value;
+    const salaId  = getElement('#sessionFilterRoom').value;
+    const data    = getElement('#sessionFilterDate').value;
 
     const query = new URLSearchParams();
-
     if (filmeId) query.append('filmeId', filmeId);
     if (salaId)  query.append('salaId', salaId);
-    if (data)    query.append('data', data);
+    if (data)    query.append('data', data); 
 
     try {
-        const res = await fetch(
-            `${API_URL}/sessoes/search?${query.toString()}`
-        );
+        const res = await fetch(`${API_URL}/sessoes/search?${query.toString()}`);
         const sessions = await res.json();
 
         if (!sessions.length) {
@@ -302,8 +300,8 @@ async function fetchSessions() {
                 <div>
                     <strong>${s.filme ? s.filme.titulo : 'Filme Removido'}</strong>
                     <div>
-                        ${s.sala ? s.sala.nome : 'Sala Removida'}
-                        - ${s.data} às ${s.horario}
+                        ${s.sala ? s.sala.nome : 'Sala Removida'} 
+                        - ${s.data.split('-').reverse().join('/')} às ${s.horario}
                     </div>
                 </div>
                 <div>
@@ -314,77 +312,104 @@ async function fetchSessions() {
                 </div>
             </div>
         `).join('');
-
     } catch (e) {
         console.error(e);
         list.innerHTML = '<p>Erro ao carregar sessões</p>';
     }
 }
 
-async function deleteSession(id) {
+getElement('#sessionFilterMovie').addEventListener('change', fetchSessions);
+getElement('#sessionFilterRoom').addEventListener('change', fetchSessions);
+getElement('#sessionFilterDate').addEventListener('change', fetchSessions);
+
+window.editSession = async function(id) {
+    try {
+        const res = await fetch(`${API_URL}/sessoes/search`); 
+        const sessoes = await res.json();
+        const s = sessoes.find(x => x._id === id);
+
+        if(!s) return alert('Sessão não encontrada');
+
+        await loadSessionFormOptions();
+
+        getElement('#sessionId').value = s._id;
+        getElement('#sessionMovieSelect').value = s.filme._id;
+        getElement('#sessionRoomSelect').value = s.sala._id;
+        getElement('#sessionDate').value = s.data;
+        getElement('#sessionTime').value = s.horario;
+        getElement('#sessionPrice').value = s.preco;
+
+        getElement('#sessionsListContainer').classList.add('hidden');
+        getElement('#sessionFormContainer').classList.remove('hidden');
+    } catch(e) {
+        console.error(e);
+        alert('Erro ao editar sessão');
+    }
+};
+
+window.deleteSession = async function(id) {
     if(!confirm('Excluir sessão?')) return;
     await fetch(`${API_URL}/sessoes/${id}`, { method: 'DELETE' });
     fetchSessions();
+};
+
+async function loadSessionFormOptions() {
+    const filmesRes = await fetch(`${API_URL}/filmes`);
+    const salasRes = await fetch(`${API_URL}/salas`);
+    const filmes = await filmesRes.json();
+    const salas = await salasRes.json();
+
+    const movieSelect = getElement('#sessionMovieSelect');
+    const roomSelect = getElement('#sessionRoomSelect');
+
+    movieSelect.innerHTML = filmes.map(f => `<option value="${f._id}">${f.titulo}</option>`).join('');
+    roomSelect.innerHTML = salas.map(s => `<option value="${s._id}">${s.nome}</option>`).join('');
 }
 
-const salesListContainer = getElement('#salesListContainer');
-const saleFormContainer = getElement('#saleFormContainer');
-
-getElement('#btnShowSaleForm').onclick = async () => {
-    salesListContainer.classList.add('hidden');
-    saleFormContainer.classList.remove('hidden');
-
-    const res = await fetch(`${API_URL}/sessoes`);
-    const sessions = await res.json();
-    const select = getElement('#saleSessionSelect');
-    
-    select.innerHTML = '<option value="">Selecione a Sessão</option>';
-    select.innerHTML += sessions.map(s => `
-        <option value="${s._id}">
-            ${s.filme?.titulo} (${s.horario}) - ${s.sala?.nome}
-        </option>
-    `).join('');
+getElement('#btnShowSessionForm').onclick = async () => {
+    getElement('#sessionsListContainer').classList.add('hidden');
+    getElement('#sessionFormContainer').classList.remove('hidden');
+    getElement('#sessionForm').reset();
+    getElement('#sessionId').value = ''; 
+    await loadSessionFormOptions();
 };
 
-getElement('#btnCancelSale').onclick = () => {
-    saleFormContainer.classList.add('hidden');
-    salesListContainer.classList.remove('hidden');
+getElement('#btnCancelSession').onclick = () => {
+    getElement('#sessionFormContainer').classList.add('hidden');
+    getElement('#sessionsListContainer').classList.remove('hidden');
 };
 
-getElement('#saleSessionSelect').addEventListener('change', async (e) => {
-    const sessaoId = e.target.value;
-    if(!sessaoId) return;
-    
-    getElement('#availableSeatsDisplay').innerText = "Verifique o mapa da sala antes de vender."; 
-});
-
-getElement('#saleForm').addEventListener('submit', async (e) => {
+getElement('#sessionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const assentosStr = getElement('#saleSeatsInput').value; 
-    const assentosArray = assentosStr.split(',').map(num => parseInt(num.trim()));
+    const id = getElement('#sessionId').value;
 
-    const novaVenda = {
-        sessaoId: getElement('#saleSessionSelect').value, 
-        assentos: assentosArray,
-        comprador: getElement('#saleCustomerName').value,
-        valorTotal: 0 
+    const sessao = {
+        filme: getElement('#sessionMovieSelect').value,
+        sala: getElement('#sessionRoomSelect').value,
+        data: getElement('#sessionDate').value,
+        horario: getElement('#sessionTime').value,
+        preco: Number(getElement('#sessionPrice').value)
     };
 
-    const res = await fetch(`${API_URL}/vendas`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(novaVenda)
-    });
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `${API_URL}/sessoes/${id}` : `${API_URL}/sessoes`;
 
-    if(res.ok) {
-        alert('Venda realizada!');
-        saleFormContainer.classList.add('hidden');
-        salesListContainer.classList.remove('hidden');
-        fetchSales();
-    } else {
-        const err = await res.json();
-        alert('Erro: ' + err.error);
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sessao)
+        });
+
+        if (!res.ok) throw new Error('Erro ao salvar');
+
+        alert(id ? 'Sessão atualizada!' : 'Sessão criada!');
+        
+        getElement('#sessionFormContainer').classList.add('hidden');
+        getElement('#sessionsListContainer').classList.remove('hidden');
+        fetchSessions();
+    } catch (err) {
+        alert('Erro: ' + err.message);
     }
 });
 
@@ -401,40 +426,149 @@ async function fetchSales() {
                 <div>
                     <h3>Venda #${v._id.substr(-6)}</h3>
                     <p>Cliente: ${v.comprador}</p>
-                    <p>Filme: ${v.sessao?.filme?.titulo || '?'}</p>
+                    <p>Filme: ${v.sessao && v.sessao.filme ? v.sessao.filme.titulo : 'Filme indisponível'}</p>
+                    <p>Sala: ${v.sessao && v.sessao.sala ? v.sessao.sala.nome : '?'}</p>
                     <p>Assentos: ${v.assentos.join(', ')}</p>
+                </div>
+                <div class="total-display" style="margin-top:10px; font-size: 0.9em">
+                    R$ ${v.valorTotal ? v.valorTotal.toFixed(2) : '-'}
                 </div>
             </div>
         `).join('');
     } catch(e) { console.error(e); }
 }
 
-getElement('#saleSessionSelect').onchange = async (e) => {
-  const sessaoId = e.target.value;
-  if (!sessaoId) return;
+getElement('#btnShowSaleForm').onclick = async () => {
+    getElement('#salesListContainer').classList.add('hidden');
+    getElement('#saleFormContainer').classList.remove('hidden');
+    getElement('#saleForm').reset();
+    getElement('#availableSeatsDisplay').innerText = '-';
+    getElement('#saleTotalValue').innerText = '0,00';
+    getElement('#saleSeatsInput').value = '';
+    
+    const res = await fetch(`${API_URL}/sessoes/search`); 
+    const sessions = await res.json();
+    
+    const select = getElement('#saleSessionSelect');
+    select.innerHTML = '<option value="">Selecione a Sessão</option>';
+    select.innerHTML += sessions.map(s => `
+        <option value="${s._id}" data-price="${s.preco}">
+            ${s.filme ? s.filme.titulo : 'S/ Filme'} | ${s.data} - ${s.horario} | ${s.sala ? s.sala.nome : 'S/ Sala'}
+        </option>
+    `).join('');
+};
 
-  const resSessao = await fetch(`${API_URL}/sessoes/search`);
-  const sessoes = await resSessao.json();
-  const sessao = sessoes.find(s => s._id === sessaoId);
+getElement('#btnCancelSale').onclick = () => {
+    getElement('#saleFormContainer').classList.add('hidden');
+    getElement('#salesListContainer').classList.remove('hidden');
+};
 
-  const res = await fetch(`${API_URL}/vendas/ocupados/${sessaoId}`);
-  const ocupados = await res.json();
+getElement('#saleSeatsInput').addEventListener('click', () => {
+    const sessaoId = getElement('#saleSessionSelect').value;
+    if(!sessaoId) return alert('Selecione uma sessão primeiro');
+    openSeatMap(sessaoId);
+});
 
-  const seatMap = getElement('#seatMap');
-  seatMap.innerHTML = '';
+function updateSaleTotal() {
+    const select = getElement('#saleSessionSelect');
+    const price = parseFloat(select.options[select.selectedIndex].dataset.price || 0);
+    const seats = getElement('#saleSeatsInput').value.split(',').filter(x => x).length;
+    getElement('#saleTotalValue').innerText = (price * seats).toFixed(2);
+    getElement('#availableSeatsDisplay').innerText = seats > 0 ? `${seats} assento(s)` : '-';
+}
 
-  for (let i = 1; i <= sessao.sala.capacidade; i++) {
-    const seat = document.createElement('div');
-    seat.className = 'seat ' + (ocupados.includes(i) ? 'occupied' : 'free');
-    seat.innerText = i;
-    seatMap.appendChild(seat);
-  }
+async function openSeatMap(sessaoId) {
+    const resSessao = await fetch(`${API_URL}/sessoes/search`);
+    const sessoes = await resSessao.json();
+    const sessao = sessoes.find(s => s._id === sessaoId);
 
-  getElement('#seatModal').classList.remove('hidden');
+    if(!sessao || !sessao.sala) return alert('Erro ao carregar sala desta sessão');
+
+    const resOcupados = await fetch(`${API_URL}/vendas/assentos/${sessaoId}`);
+    const ocupados = await resOcupados.json();
+
+    const seatMap = getElement('#seatMap');
+    seatMap.innerHTML = '';
+    
+    currentSelectedSeats = []; 
+
+    for (let i = 1; i <= sessao.sala.capacidade; i++) {
+        const seat = document.createElement('div');
+        const isOccupied = ocupados.includes(i);
+        
+        seat.className = `seat ${isOccupied ? 'occupied' : 'free'}`;
+        seat.innerText = i;
+        
+        if(isOccupied) {
+            seat.style.backgroundColor = '#e74c3c';
+            seat.style.cursor = 'not-allowed';
+        } else {
+            seat.onclick = () => toggleSeatSelection(i, seat);
+        }
+        
+        seatMap.appendChild(seat);
+    }
+    
+    getElement('#seatModal').classList.remove('hidden');
+}
+
+function toggleSeatSelection(num, seatElem) {
+    const index = currentSelectedSeats.indexOf(num);
+    if(index === -1) {
+        currentSelectedSeats.push(num);
+        seatElem.style.backgroundColor = '#27ae60'; 
+    } else {
+        currentSelectedSeats.splice(index, 1);
+        seatElem.style.backgroundColor = '#34495e'; 
+    }
+}
+
+window.closeSeatModal = function() {
+    currentSelectedSeats.sort((a,b) => a - b);
+    getElement('#saleSeatsInput').value = currentSelectedSeats.join(',');
+    updateSaleTotal();
+    getElement('#seatModal').classList.add('hidden');
 };
 
 
+getElement('#saleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const select = getElement('#saleSessionSelect');
+    const price = parseFloat(select.options[select.selectedIndex].dataset.price || 0);
+    const assentosStr = getElement('#saleSeatsInput').value; 
+    
+    if(!assentosStr) return alert('Selecione ao menos um assento.');
+
+    const assentosArray = assentosStr.split(',').map(num => parseInt(num.trim()));
+
+    const novaVenda = {
+        sessao: select.value, 
+        assentos: assentosArray,
+        comprador: getElement('#saleCustomerName').value,
+        valorTotal: price * assentosArray.length
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/vendas`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(novaVenda)
+        });
+
+        if(res.ok) {
+            alert('Venda realizada!');
+            getElement('#saleFormContainer').classList.add('hidden');
+            getElement('#salesListContainer').classList.remove('hidden');
+            fetchSales();
+        } else {
+            const err = await res.json();
+            alert('Erro: ' + (err.error || 'Falha na venda'));
+        }
+    } catch(e) {
+        alert('Erro de conexão');
+    }
+});
+
 loadViewData('movies');
-getElement('#searchMovieInput').addEventListener('input', fetchMovies);
-getElement('#filterCategory').addEventListener('change', fetchMovies);
-getElement('#filterRating').addEventListener('change', fetchMovies);
+loadCategories();
